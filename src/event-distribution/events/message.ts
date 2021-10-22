@@ -6,7 +6,7 @@ import {
   MessageRelatedOptions,
 } from "../types/base";
 import { GuildChannel, Message, TextBasedChannels } from "discord.js";
-import { addToTree, getIdFromCategoryName } from "../helper";
+import { addToTree, getIdFromParentName } from "../helper";
 
 export interface MessageEventHandlerOptions extends MessageRelatedOptions {
   event: DiscordEvent.MESSAGE;
@@ -24,15 +24,15 @@ export type MessageHandlerFunction<T extends DiscordEvent> = HandlerFunctionFor<
 export const addMessageHandler: AddEventHandlerFunction<MessageEventHandlerOptions> =
   (options, ioc, tree) => {
     const channels = options.channelNames ?? [];
-    const categories = options.categoryNames ?? [];
-    if (channels.length === 0 && categories.length === 0) channels.push("");
+    const parents = options.parentNames ?? [];
+    if (channels.length === 0 && parents.length === 0) channels.push("");
 
     const trigger = options.trigger ?? "";
     const subTrigger = options.subTrigger ?? "";
 
     const combinedChannels = [
       ...channels,
-      ...categories.map((c) => getIdFromCategoryName(c)),
+      ...parents.map((c) => getIdFromParentName(c)),
     ];
 
     for (const channel of combinedChannels) {
@@ -64,16 +64,16 @@ export const extractMessageInfo: ExtractInfoForEventFunction<DiscordEvent.MESSAG
       },
     ];
 
-    const maybeCategory = (channel as GuildChannel).parent;
-    if (maybeCategory) {
-      const normalizedCategoryName = maybeCategory.name
-        .match(/[a-z\d\s.]+/gi)[0]
+    const maybeParent = (channel as GuildChannel).parent;
+    if (maybeParent) {
+      const normalizedParentName = maybeParent.name
+        .match(/[a-z-\d\s.]+/gi)[0]
         .trim();
-      const categoryIdentifier = getIdFromCategoryName(normalizedCategoryName);
+      const parentIdentifier = getIdFromParentName(normalizedParentName);
 
       info.push({
         ...baseInfo,
-        handlerKeys: [categoryIdentifier, trigger, subTrigger],
+        handlerKeys: [parentIdentifier, trigger, subTrigger],
       });
     }
 

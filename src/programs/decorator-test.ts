@@ -167,7 +167,7 @@ export class DecoratorTest9 extends CommandHandler<DiscordEvent.MESSAGE> {
   event: DiscordEvent.MESSAGE,
   trigger: "!test",
   channelNames: ["minecraft"],
-  categoryNames: ["Gaming"],
+  parentNames: ["Gaming"],
   description: "",
 })
 export class DecoratorTest10 extends CommandHandler<DiscordEvent.MESSAGE> {
