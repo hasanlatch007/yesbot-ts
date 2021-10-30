@@ -60,7 +60,8 @@ export const extractReactionInfo: ExtractInfoForEventFunction<
 
   const baseInfo = {
     member,
-    isDirectMessage: reaction.message.channel.type === "DM",
+    isDirectMessage: channel.type === "DM",
+    content: message.content,
   };
 
   const info = [

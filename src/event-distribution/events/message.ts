@@ -3,6 +3,7 @@ import {
   DiscordEvent,
   ExtractInfoForEventFunction,
   HandlerFunctionFor,
+  HandlerInfo,
   MessageRelatedOptions,
 } from "../types/base";
 import { GuildChannel, Message, TextBasedChannels } from "discord.js";
@@ -55,6 +56,7 @@ export const extractMessageInfo: ExtractInfoForEventFunction<DiscordEvent.MESSAG
     const baseInfo = {
       member: message.member,
       isDirectMessage: message.channel.type === "DM",
+      content: message.content,
     };
 
     const info = [
