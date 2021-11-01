@@ -40,3 +40,5 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn tsc --noEmit
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GPR_READ_TOKEN }}
