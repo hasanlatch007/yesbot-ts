@@ -18,7 +18,14 @@ import {
   ReactionHandlerFunction,
 } from "./reactions";
 import { StringIndexedHIOCTree } from "../types/hioc";
-import { Client, Message, MessageReaction, User, VoiceState } from "discord.js";
+import {
+  ButtonInteraction,
+  Client,
+  Message,
+  MessageReaction,
+  User,
+  VoiceState,
+} from "discord.js";
 import {
   addGuildMemberUpdateHandler,
   extractGuildMemberUpdateInfo,
@@ -61,8 +68,15 @@ import {
 import { Timer } from "@yes-theory-fam/database/client";
 import { createYesBotLogger } from "../../log";
 import Tools from "../../common/tools";
+import {
+  addButtonClickedHandler,
+  ButtonClickedHandlerFunction,
+  ButtonClickedHandlerOptions,
+  extractButtonClickedInfo,
+} from "./button-clicked";
 
 export type EventHandlerOptions =
+  | ButtonClickedHandlerOptions
   | MemberLeaveEventHandlerOptions
   | MessageEventHandlerOptions
   | ReactionEventHandlerOptions
@@ -73,6 +87,7 @@ export type EventHandlerOptions =
   | MemberJoinEventHandlerOptions;
 
 export type HandlerFunction<T extends DiscordEvent> =
+  | ButtonClickedHandlerFunction<T>
   | MemberLeaveHandlerFunction<T>
   | MessageHandlerFunction<T>
   | ReactionHandlerFunction<T>
@@ -89,7 +104,8 @@ export const isMessageRelated = (
 ): options is MessageRelatedOptions =>
   options.event === DiscordEvent.MESSAGE ||
   options.event === DiscordEvent.REACTION_ADD ||
-  options.event === DiscordEvent.REACTION_REMOVE;
+  options.event === DiscordEvent.REACTION_REMOVE ||
+  options.event === DiscordEvent.BUTTON_CLICKED;
 
 export const addEventHandler: AddEventHandlerFunction<EventHandlerOptions> = (
   options,
@@ -97,6 +113,12 @@ export const addEventHandler: AddEventHandlerFunction<EventHandlerOptions> = (
   tree
 ) => {
   switch (options.event) {
+    case DiscordEvent.BUTTON_CLICKED:
+      return addButtonClickedHandler(
+        options,
+        ioc,
+        tree as StringIndexedHIOCTree<DiscordEvent.BUTTON_CLICKED>
+      );
     case DiscordEvent.MEMBER_LEAVE:
       return addMemberLeaveHandler(
         options,
@@ -157,6 +179,8 @@ export const extractEventInfo: ExtractInfoFunction<DiscordEvent> = (
 ) => {
   const getInfos = () => {
     switch (event) {
+      case DiscordEvent.BUTTON_CLICKED:
+        return extractButtonClickedInfo(args[0] as ButtonInteraction);
       case DiscordEvent.MEMBER_LEAVE:
         return extractMemberLeaveInfo(args[0] as MemberLeaveArgument);
       case DiscordEvent.MEMBER_JOIN:
@@ -189,7 +213,7 @@ export const extractEventInfo: ExtractInfoFunction<DiscordEvent> = (
   return Array.isArray(infos) ? infos : [infos];
 };
 
-export const rejectWithMessage = (
+export const rejectWithMessage = async (
   message: string,
   event: DiscordEvent,
   ...args: Parameters<HandlerFunction<DiscordEvent>>
@@ -201,7 +225,7 @@ export const rejectWithMessage = (
         message,
         messageArg.guild
       );
-      return messageArg.reply(channelResolvedMessage);
+      return await Tools.handleUserError(messageArg, channelResolvedMessage);
     default:
       logger.error(
         `Tried to reject event ${event} with message: ${message} but rejection isn't implemented for this event.`

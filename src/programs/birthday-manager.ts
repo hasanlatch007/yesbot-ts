@@ -126,14 +126,15 @@ class BirthdayManager implements CommandHandler<DiscordEvent.MESSAGE> {
     try {
       timezone = await getUserTimezone(message);
     } catch (err) {
+      const engineerRole = Tools.getRoleByName(
+        process.env.ENGINEER_ROLE_NAME,
+        message.guild
+      );
+
       if (
         err instanceof Error &&
         err.message === "Too many available time zones"
       ) {
-        const engineerRole = Tools.getRoleByName(
-          process.env.ENGINEER_ROLE_NAME,
-          message.guild
-        );
         await message.delete();
         const allowedMentions: MessageMentionOptions = {
           roles: [engineerRole.id],
@@ -148,6 +149,10 @@ class BirthdayManager implements CommandHandler<DiscordEvent.MESSAGE> {
         });
       } else if (err instanceof Error && err.message === "time expired") {
         await message.react("⏰");
+      } else if (err instanceof Error && err.message === "No timezone found") {
+        await message.reply(
+          `Whoops! We couldn't figure out potential timezones for you. Calling for help :telephone: ${engineerRole.toString()}`
+        );
       } else {
         logger.error(
           "An unknown error has occurred awaiting the users timezone: ",
@@ -169,9 +174,8 @@ class BirthdayManager implements CommandHandler<DiscordEvent.MESSAGE> {
       "Hi there! Could someone help me by executing this command? Thank you!"
     );
     await textLog(
-      `\`bb.override <@${birthdayUser.id}> set ${formatBirthday(
-        birthdate
-      )} ${timezone}\``
+      `\`bb.override <@${birthdayUser.id}> set ${formatBirthday(birthdate)}\`
+\`bb.override <@${birthdayUser.id}> zone ${timezone}\``
     );
 
     const birthday = createBirthday(birthdayUser.id, birthdate, timezone);
@@ -269,6 +273,10 @@ async function getUserTimezone(message: Message): Promise<string> {
     .map(timezonesFromRole)
     .reduce((prev, curr) => [...prev, ...curr], [])
     .filter((tz) => tz.includes("/"));
+
+  if (timezones.length === 0) {
+    throw new Error("No timezone found");
+  }
 
   if (timezones.length > 20) {
     logger.error("User has too many available timezones: ", timezones);
@@ -411,9 +419,7 @@ function timezonesFromRole(props: CountryWithRegion): readonly string[] {
     case "UK":
       return getCountry("GB").timezones;
     case "Mexico":
-      return getCountry("MX")
-        .timezones // BajaSur and BajaNorth are invalid in JS.
-        .filter((tz) => !tz.startsWith("Mexico/Baja"));
+      return getCountry("MX").timezones;
     case "Australia": {
       return [
         "Australia/Perth",
@@ -424,7 +430,7 @@ function timezonesFromRole(props: CountryWithRegion): readonly string[] {
       ];
     }
     case "Canada": {
-      return getCountry("CA").timezones.filter((tz) =>
+      return getCountry("CA", { deprecated: true }).timezones.filter((tz) =>
         tz.startsWith("Canada/")
       );
     }

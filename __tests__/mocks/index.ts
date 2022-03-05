@@ -1,6 +1,7 @@
 import Discord, {
   Channel,
   Client,
+  ClientUser,
   Guild,
   GuildChannel,
   GuildMember,
@@ -19,16 +20,20 @@ import {
 } from "discord-api-types";
 import { MockMessage } from "./message";
 import { MockMessageReaction } from "./reaction";
-import { MockGuild } from "./guild";
+import { GuildMock, MockGuild } from "./guild";
 import { MockGuildMember } from "./guildmember";
+import { RawUserData } from "discord.js/typings/rawDataTypes";
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+
+// In some minor update, Discord.JS uses BigInt internally disallowing arbitrary strings for ids
+const idString = "9007199254740991";
 
 export default class MockDiscord {
   public message!: Message;
   public messageReaction!: MessageReaction;
   private client!: Client;
-  private guild!: MockGuild;
+  private guild!: GuildMock;
   private channel!: Channel;
   private guildChannel!: GuildChannel;
   private textChannel!: TextChannel;
@@ -64,14 +69,6 @@ export default class MockDiscord {
     return this.channel;
   }
 
-  public getGuildChannel(): GuildChannel {
-    return this.guildChannel;
-  }
-
-  public getTextChannel(): TextChannel {
-    return this.textChannel;
-  }
-
   public getUser(): User {
     return this.user;
   }
@@ -100,18 +97,35 @@ export default class MockDiscord {
     this.guild.addMember(this.guildMember);
   };
 
+  private rawUserData: RawUserData = {
+    id: idString,
+    username: "user username",
+    discriminator: "user#0000",
+    avatar: "user avatar url",
+    bot: false,
+  };
+
   private mockClient(): void {
     this.client = new Discord.Client({ intents: [], restSweepInterval: 0 });
 
     this.client.users.fetch = jest.fn(() => Promise.resolve(this.getUser()));
+    this.client.user = Reflect.construct(ClientUser, [
+      this.client,
+      {
+        ...this.rawUserData,
+        bot: true,
+      },
+    ]);
+    this.client.user.id = idString;
+
     this.client.login = jest.fn(() => Promise.resolve("LOGIN_TOKEN"));
     this.client.token = process.env.BOT_TOKEN;
   }
 
   private mockGuild(): void {
-    this.guild = new MockGuild(this.client, {
+    this.guild = MockGuild.new(this.client, {
       unavailable: false,
-      id: "guild-id",
+      id: idString,
       name: "mocked js guild",
       icon: "mocked guild icon url",
       splash: "mocked guild splash url",
@@ -119,15 +133,15 @@ export default class MockDiscord {
       member_count: 42,
       large: false,
       features: [],
-      application_id: "application-id",
+      application_id: idString,
       afk_timeout: 1000,
-      afk_channel_id: "afk-channel-id",
-      system_channel_id: "system-channel-id",
+      afk_channel_id: idString,
+      system_channel_id: idString,
       verification_level: 2,
       explicit_content_filter: 3,
       mfa_level: 8,
       joined_at: new Date("2018-01-01").getTime().toString(),
-      owner_id: "owner-id",
+      owner_id: idString,
       channels: [],
       roles: [],
       presences: [],
@@ -137,46 +151,49 @@ export default class MockDiscord {
   }
 
   private mockChannel(): void {
-    this.channel = new Channel(this.client, {
-      id: "channel-id",
-      name: "Frank",
-      type: ChannelType.GuildText,
-    });
+    this.channel = Reflect.construct(Channel, [
+      this.client,
+      {
+        id: idString,
+        name: "Frank",
+        type: ChannelType.GuildText,
+      },
+    ]);
   }
 
   private mockGuildChannel(): void {
-    this.guildChannel = new GuildChannel(this.guild, {
-      ...this.channel,
+    this.guildChannel = Reflect.construct(GuildChannel, [
+      this.guild,
+      {
+        ...this.channel,
 
-      type: ChannelType.GuildText,
-      name: "guild-channel",
-      position: 1,
-      parent_id: "123456789",
-      permission_overwrites: [],
-    });
+        type: ChannelType.GuildText,
+        name: idString,
+        position: 1,
+        parent_id: idString,
+        permission_overwrites: [],
+      },
+    ]);
   }
 
   private mockTextChannel(): void {
-    this.textChannel = new TextChannel(this.guild, {
-      ...this.guildChannel,
+    this.textChannel = Reflect.construct(TextChannel, [
+      this.guild,
+      {
+        ...this.guildChannel,
 
-      type: ChannelType.GuildText,
-      topic: "topic",
-      nsfw: false,
-      last_message_id: "123456789",
-      last_pin_timestamp: new Date("2019-01-01").getTime().toString(),
-      rate_limit_per_user: 0,
-    });
+        type: ChannelType.GuildText,
+        topic: "topic",
+        nsfw: false,
+        last_message_id: idString,
+        last_pin_timestamp: new Date("2019-01-01").getTime().toString(),
+        rate_limit_per_user: 0,
+      },
+    ]);
   }
 
   private mockUser(): void {
-    this.user = new User(this.client, {
-      id: "222222222222222200",
-      username: "user username",
-      discriminator: "user#0000",
-      avatar: "user avatar url",
-      bot: false,
-    });
+    this.user = Reflect.construct(User, [this.client, this.rawUserData]);
   }
 
   private apiUser(): APIUser {
@@ -198,7 +215,7 @@ export default class MockDiscord {
   }
 
   private mockGuildMember(): void {
-    this.guildMember = new MockGuildMember(
+    this.guildMember = MockGuildMember.new(
       this.client,
       this.apiMember(),
       this.guild
@@ -206,12 +223,12 @@ export default class MockDiscord {
   }
 
   private mockMessage(): void {
-    this.message = new MockMessage(
+    this.message = MockMessage.new(
       this.textChannel,
       this.guildMember,
       this.client,
       {
-        id: "message-id",
+        id: idString,
         channel_id: this.channel.id,
         type: MessageType.Default,
         content: "this is the message content",
@@ -234,7 +251,7 @@ export default class MockDiscord {
   }
 
   private mockMessageReaction(): void {
-    this.messageReaction = new MockMessageReaction(
+    this.messageReaction = MockMessageReaction.new(
       this.guildMember,
       this.client,
       {
@@ -252,10 +269,10 @@ export default class MockDiscord {
   }
 
   private mockRole() {
-    this.role = new Role(
+    this.role = Reflect.construct(Role, [
       this.client,
       {
-        id: "",
+        id: idString,
         name: "Jeremy",
         color: 0xffff00,
         hoist: false,
@@ -264,22 +281,25 @@ export default class MockDiscord {
         managed: false,
         permissions: "",
       },
-      this.guild
-    );
+      this.guild,
+    ]);
   }
 
   private mockVoiceState() {
-    this.voiceState = new VoiceState(this.guild, {
-      deaf: false,
-      mute: false,
-      suppress: false,
-      channel_id: this.channel.id,
-      user_id: this.user.id,
-      session_id: "",
-      self_deaf: false,
-      self_mute: false,
-      self_video: true,
-      request_to_speak_timestamp: null,
-    });
+    this.voiceState = Reflect.construct(VoiceState, [
+      this.guild,
+      {
+        deaf: false,
+        mute: false,
+        suppress: false,
+        channel_id: this.channel.id,
+        user_id: this.user.id,
+        session_id: "",
+        self_deaf: false,
+        self_mute: false,
+        self_video: true,
+        request_to_speak_timestamp: null,
+      },
+    ]);
   }
 }

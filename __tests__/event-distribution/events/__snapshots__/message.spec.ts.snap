@@ -63,7 +63,7 @@ Object {
 exports[`Messages should add data to the tree 3`] = `
 Object {
   "bot-development": Object {
-    "!otherTrigger": Object {
+    "!othertrigger": Object {
       "": Array [
         Object {
           "ioc": Object {},
@@ -115,7 +115,7 @@ Object {
     },
   },
   "bot-test-channel": Object {
-    "!otherTrigger": Object {
+    "!othertrigger": Object {
       "": Array [
         Object {
           "ioc": Object {},
@@ -143,20 +143,23 @@ exports[`Messages should extract messages from direct message 1`] = `
 Array [
   Object {
     "handlerKeys": Array [
-      "channel-id",
+      "9007199254740991",
       "this",
       "is",
     ],
     "isDirectMessage": true,
     "member": Object {
-      "deleted": false,
+      "avatar": null,
+      "avatarURL": null,
+      "communicationDisabledUntilTimestamp": null,
+      "displayAvatarURL": "https://cdn.discordapp.com/avatars/9007199254740991/user avatar url.webp",
       "displayName": "nick",
-      "guildId": "guild-id",
+      "guildId": "9007199254740991",
       "joinedTimestamp": NaN,
       "nickname": "nick",
       "pending": false,
       "premiumSinceTimestamp": null,
-      "userId": "222222222222222200",
+      "userId": "9007199254740991",
     },
   },
 ]
@@ -166,20 +169,23 @@ exports[`Messages should extract messages from public channel 1`] = `
 Array [
   Object {
     "handlerKeys": Array [
-      "guild-channel",
+      "9007199254740991",
       "this",
       "is",
     ],
     "isDirectMessage": false,
     "member": Object {
-      "deleted": false,
+      "avatar": null,
+      "avatarURL": null,
+      "communicationDisabledUntilTimestamp": null,
+      "displayAvatarURL": "https://cdn.discordapp.com/avatars/9007199254740991/user avatar url.webp",
       "displayName": "nick",
-      "guildId": "guild-id",
+      "guildId": "9007199254740991",
       "joinedTimestamp": NaN,
       "nickname": "nick",
       "pending": false,
       "premiumSinceTimestamp": null,
-      "userId": "222222222222222200",
+      "userId": "9007199254740991",
     },
   },
 ]

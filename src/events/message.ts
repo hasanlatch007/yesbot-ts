@@ -1,10 +1,5 @@
-import { GuildChannel, Message, TextChannel } from "discord.js";
-import {
-  ExportManager,
-  GroupManager,
-  MapTools,
-  VoiceOnDemand,
-} from "../programs";
+import { Message, TextChannel } from "discord.js";
+import { ExportManager, MapTools, VoiceOnDemand } from "../programs";
 
 const message = async (msg: Message) => {
   if (msg.channel.type === "DM" && !msg.author.bot) {
@@ -15,26 +10,14 @@ const message = async (msg: Message) => {
 };
 
 const routeMessage = async (message: Message) => {
-  const words = message.content.split(/\s+/);
+  const words = message.content.toLowerCase().split(/\s+/);
   const channel = <TextChannel>message.channel;
   const firstWord = words[0];
-  const restOfMessage = words.slice(1).join(" ");
 
   switch (channel.name) {
     case "permanent-testing":
       if (firstWord === "!export") await ExportManager(message);
-      if (
-        firstWord === "!group" &&
-        !message.content.toLowerCase().startsWith("!group toggle")
-      )
-        await GroupManager(message, true);
     case "bot-commands":
-      if (
-        firstWord === "!group" &&
-        !message.content.toLowerCase().startsWith("!group toggle")
-      )
-        await GroupManager(message, true);
-
       if (firstWord === "!voice") await VoiceOnDemand(message);
       if (firstWord === "!map") await MapTools.map(message);
       if (firstWord === "!mapadd") await MapTools.mapAdd(message);
@@ -47,11 +30,6 @@ const routeMessage = async (message: Message) => {
     );
     await message.member.roles.remove(guildRole);
   }
-
-  if (message.content.toLowerCase().startsWith("!group toggle"))
-    await GroupManager(message, true);
-
-  if (words.includes("@group")) await GroupManager(message, false);
 };
 
 export default message;
